@@ -17,7 +17,7 @@ class PhraseDetectionService {
   final ElevenlabsService _transcriptionService = ElevenlabsService();
 
   // Configuration
-  static const Duration _recordingDuration = Duration(seconds: 3);
+  static const Duration _recordingDuration = Duration(seconds: 2);
   static const Duration _pauseBetweenRecordings = Duration(milliseconds: 250);
 
   // State management

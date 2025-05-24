@@ -1,4 +1,8 @@
+import 'dart:developer' as console;
+
 import 'package:flutter/material.dart';
+import 'package:record/record.dart';
+import 'package:reflectifai/service/audio_recording_service.dart';
 import 'package:reflectifai/service/phrase_detection_service.dart';
 import 'package:reflectifai/service/elevenlabs.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,14 +19,15 @@ class _HomePageState extends State<HomePage> {
   final PhraseDetectionService _phraseDetectionService =
       PhraseDetectionService();
   final ElevenlabsService _elevenlabsService = ElevenlabsService();
+  final AudioRecordingService _audioRecordingService = AudioRecordingService();
+  String text = 'stop';
 
   @override
   void initState() {
     super.initState();
     _initializePhraseDetection();
     _startDetection();
-    // Test TTS functionality on startup
-    _testTextToSpeech();
+    _audioRecordingService.init();
   }
 
   Future<void> _initializePhraseDetection() async {
@@ -43,11 +48,9 @@ class _HomePageState extends State<HomePage> {
     _phraseDetectionService.setDebugMode(true);
 
     // Add debugging callback for audio processing
-    _phraseDetectionService.addAudioProcessingCallback((audioPath, fileSize) {
-      print('🎤 AUDIO RECORDED: $audioPath');
-      print('📊 File size: ${fileSize} bytes');
-      print('---');
-    });
+    _phraseDetectionService.addAudioProcessingCallback(
+      (audioPath, fileSize) {},
+    );
 
     // Add debugging callback for transcription results
     _phraseDetectionService.addTranscriptionCallback((transcript, isSuccess) {
@@ -66,17 +69,36 @@ class _HomePageState extends State<HomePage> {
       detectedPhrase,
       fullTranscript,
     ) {
-      // Only log to console, no UI updates
-      print('🎯 PHRASE DETECTED: "$detectedPhrase"');
-      print('📝 Full transcript: "$fullTranscript"');
-      print('⏰ Time: ${DateTime.now()}');
-      print('---');
-
-      // Handle specific phrases
-      if (detectedPhrase.contains('stop listening')) {
-        _stopDetection();
-      }
+      console.log(
+        '📣 PHRASE DETECTED: "$detectedPhrase" in full transcript: "$fullTranscript"',
+      );
+      setState(() {
+        text = 'start';
+      });
+      startListening();
     });
+  }
+
+  void startListening() async {
+    await _stopDetection();
+    var bytes = await _audioRecordingService.startRecording();
+    String? words = null;
+    if (bytes != null) {
+      console.log('🎤 AUDIO RECORDING COMPLETED, SIZE: ${bytes.length} bytes');
+      // Process the recorded audio bytes as needed
+      words = await _elevenlabsService.transcribeAudioBytes(bytes);
+    } else {
+      console.log('❌ AUDIO RECORDING FAILED OR TIMED OUT');
+    }
+    if (words != null && words.isNotEmpty) {
+      setState(() {
+        text = 'stop';
+      });
+      console.log('📝 TRANSCRIPTION RESULT: "$words"');
+    } else {
+      console.log('🔇 NO WORDS DETECTED IN TRANSCRIPTION');
+    }
+    await _startDetection();
   }
 
   Future<void> _startDetection() async {
@@ -118,40 +140,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ReflectifAI - Console Mode'),
-        backgroundColor: Colors.blue,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Phrase Detection Running',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Check console for phrase detections',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: _testTextToSpeech,
-              child: const Text('Test Text-to-Speech'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                await _stopDetection();
-                await _startDetection();
-              },
-              child: const Text('Restart Detection'),
-            ),
-          ],
-        ),
-      ),
-    );
+    return Scaffold(body: Center(child: Text(text)));
   }
 }
