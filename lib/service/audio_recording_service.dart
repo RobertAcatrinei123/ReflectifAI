@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data'; // For Uint8List
 
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -31,7 +30,7 @@ class AudioRecordingService {
       console.log('AudioRecordingService initialized successfully.');
       return true;
     } catch (e) {
-      console.log('Error initializing AudioRecordingService: \$e');
+      console.log('Error initializing AudioRecordingService: $e');
       return false;
     }
   }
@@ -74,7 +73,7 @@ class AudioRecordingService {
       // Using .wav for broader compatibility if AAC/M4A causes issues, though AAC is good for size.
       // For ElevenLabs, m4a (AAC) is fine.
       _currentRecordingPath =
-          '\${tempDir.path}/recording_\${DateTime.now().millisecondsSinceEpoch}.m4a';
+          '${tempDir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
       const config = RecordConfig(
         encoder: AudioEncoder.aacLc, // AAC is a good default
@@ -84,13 +83,13 @@ class AudioRecordingService {
       );
 
       await _recorder.start(config, path: _currentRecordingPath!);
-      console.log('Recording started: \$_currentRecordingPath');
+      console.log('Recording started: $_currentRecordingPath');
 
       // Overall timeout for the recording
       _timeoutTimer?.cancel();
       _timeoutTimer = Timer(timeoutDuration, () {
         console.log(
-          'Recording timeout reached (\${timeoutDuration.inSeconds}s).',
+          'Recording timeout reached (${timeoutDuration.inSeconds}s).',
         );
         _stopRecordingAndProcess(reason: 'timeout');
       });
@@ -107,7 +106,7 @@ class AudioRecordingService {
             // console.log('Potential silence detected (<\${silenceThresholdDb}dBFS), starting silence timer (\${silenceDetectionDuration.inSeconds}s).');
             _silenceTimer = Timer(silenceDetectionDuration, () {
               console.log(
-                'Confirmed silence for \${silenceDetectionDuration.inSeconds}s.',
+                'Confirmed silence for ${silenceDetectionDuration.inSeconds}s.',
               );
               _stopRecordingAndProcess(reason: 'silence');
             });
@@ -121,7 +120,7 @@ class AudioRecordingService {
 
       return _recordingCompleter!.future;
     } catch (e) {
-      console.log('Error starting recording: \$e');
+      console.log('Error starting recording: $e');
       await _cleanupOnError();
       if (_recordingCompleter != null && !_recordingCompleter!.isCompleted) {
         _recordingCompleter!.complete(null);
@@ -138,21 +137,21 @@ class AudioRecordingService {
       return;
     }
 
-    console.log('Stopping recording due to: \$reason...');
+    console.log('Stopping recording due to: $reason...');
     String? path;
     try {
       if (await _recorder.isRecording()) {
         path = await _recorder.stop();
-        console.log('Recorder stopped. File at: \$path');
+        console.log('Recorder stopped. File at: $path');
       } else {
         console.log(
-          'Recorder was not recording, but processing requested. Path: \$_currentRecordingPath',
+          'Recorder was not recording, but processing requested. Path: $_currentRecordingPath',
         );
         path =
             _currentRecordingPath; // Use the path we started with if stop() wasn't called or needed
       }
     } catch (e) {
-      console.log('Error stopping recorder: \$e');
+      console.log('Error stopping recorder: $e');
       if (!_recordingCompleter!.isCompleted) {
         _recordingCompleter!.complete(null);
       }
@@ -177,23 +176,24 @@ class AudioRecordingService {
       final file = File(path);
       if (await file.exists()) {
         final audioBytes = await file.readAsBytes();
-        console.log('Read \${audioBytes.length} bytes from \$path.');
+        console.log('Read ${audioBytes.length} bytes from $path.');
         if (!_recordingCompleter!.isCompleted) {
           _recordingCompleter!.complete(audioBytes);
         }
-        await file.delete().catchError((e) {
-          // Attempt to delete, log error if fails
-          console.log('Error deleting temporary file \$path: \$e');
-        });
-        console.log('Temporary file \$path processed and delete attempted.');
+        try {
+          await file.delete();
+        } catch (e) {
+          console.log('Error deleting temporary file $path: $e');
+        }
+        console.log('Temporary file $path processed and delete attempted.');
       } else {
-        console.log('Recorded file does not exist at \$path.');
+        console.log('Recorded file does not exist at $path.');
         if (!_recordingCompleter!.isCompleted) {
           _recordingCompleter!.complete(null);
         }
       }
     } catch (e) {
-      console.log('Error processing recorded file: \$e');
+      console.log('Error processing recorded file: $e');
       if (!_recordingCompleter!.isCompleted) {
         _recordingCompleter!.complete(null);
       }
@@ -221,9 +221,11 @@ class AudioRecordingService {
     if (_currentRecordingPath != null) {
       final file = File(_currentRecordingPath!);
       if (await file.exists()) {
-        await file.delete().catchError(
-          (e) => console.log("Error deleting file during cleanupOnError: \$e"),
-        );
+        try {
+          await file.delete();
+        } catch (e) {
+          console.log("Error deleting file during cleanupOnError: $e");
+        }
       }
     }
     _cleanupPath();
