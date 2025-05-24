@@ -44,9 +44,9 @@ class AudioRecordingService {
   ///
   /// Returns a Future containing the audio bytes as List<int>, or null on error/failure.
   Future<List<int>?> startRecording({
-    Duration timeoutDuration = const Duration(seconds: 20),
-    Duration silenceDetectionDuration = const Duration(seconds: 3),
-    double silenceThresholdDb = -40.0, // dBFS, quieter than this is silence
+    Duration timeoutDuration = const Duration(seconds: 5),
+    Duration silenceDetectionDuration = const Duration(seconds: 2),
+    double silenceThresholdDb = -40.0, 
     Duration amplitudeCheckInterval = const Duration(milliseconds: 500),
   }) async {
     if (!_isInitialized) {

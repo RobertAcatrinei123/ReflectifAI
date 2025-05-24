@@ -5,10 +5,9 @@ import 'package:reflectifai/apikeys.dart';
 
 class GeminiService {
   static const String apiKey = Apikeys.gemini;
-  Future<Map<String, dynamic>> getResponse(
+  Future<String> getResponse(
     List<Map<String, String>> chat,
     List<Map<String, String>> instructions,
-    List<String> voiceIDs,
   ) async {
     final url = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=$apiKey',
@@ -36,15 +35,7 @@ class GeminiService {
         final data = jsonDecode(response.body);
         String assistantMessage =
             data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '';
-        String voice = assistantMessage.split('\n').first.trim();
-        if (voiceIDs.contains(voice)) {
-          assistantMessage =
-              assistantMessage.substring(voice.length + 1).trim();
-        } else {
-          voice = voiceIDs[0];
-          assistantMessage = assistantMessage.trim();
-        }
-        return {'text': assistantMessage, 'voice': voice};
+        return assistantMessage;
       } else {
         console.log('Gemini API error: ${response.body}');
         throw Exception(
@@ -53,13 +44,12 @@ class GeminiService {
       }
     } catch (e) {
       console.log('Error getting Gemini response: $e');
-      return {'error': e.toString()};
+      return e.toString();
     }
   }
 
   Future<Map<String, dynamic>> getResponseold(
     List<Map<String, String>> chat,
-    List<String> voiceIDs,
   ) async {
     final url = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey',
@@ -87,13 +77,6 @@ class GeminiService {
         String assistantMessage =
             data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '';
         String voice = assistantMessage.split('\n').first.trim();
-        if (voiceIDs.contains(voice)) {
-          assistantMessage =
-              assistantMessage.substring(voice.length + 1).trim();
-        } else {
-          voice = voiceIDs[0];
-          assistantMessage = assistantMessage.trim();
-        }
         return {'text': assistantMessage, 'voice': voice};
       } else {
         console.log('Gemini API error: ${response.body}');
