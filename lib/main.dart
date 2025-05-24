@@ -29,7 +29,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   late Animation<double> _pulse;
 
   // Manually controlled
-  bool isSpeaking = true;
+  bool isSpeaking = false;
 
   @override
   void initState() {
