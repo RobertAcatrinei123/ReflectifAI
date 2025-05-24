@@ -1,0 +1,35 @@
+{
+    "user": {
+      "name": "Vlad",
+      "age": 68,
+      "location": "Cluj, Romania",
+      "living_situation": "Lives alone in an apartment",
+      "emotional_notes": [
+        "Often feels lonely in the evenings",
+        "Dislikes being rushed",
+        "Prefers calm, simple conversations"
+      ]
+    },
+    "daily_routine": [
+      { "time": "08:00", "activity": "Takes morning medication, makes tea, reads sports headlines" },
+      { "time": "10:30", "activity": "Checks balcony plants (mint, roses, cherry tomatoes)" },
+      { "time": "13:00", "activity": "Cooks something light (grilled cheese, potato stew)" },
+      { "time": "16:00", "activity": "Listens to Romanian radio and does light stretches" },
+      { "time": "18:30", "activity": "Watches football highlights or looks through family photo albums" },
+      { "time": "21:00", "activity": "Takes evening medication and prepares for bed by 22:00" }
+    ],
+    "interests": [
+      "Romanian football history (especially Steaua in the 1980s)",
+      "Balcony gardening and herbs",
+      "Old family memories",
+      "Light humor",
+      "Weather, birthdays, daily curiosities"
+    ],
+    "dislikes": [
+      "Being rushed",
+      "Cold meals",
+      "Tech jargon"
+    ],
+    "shared_memory": "Vlad once told Reflectify about attending a Steaua match with his brother in 1986, wearing matching scarves and cheering until they lost their voices."
+  }
+  
