@@ -11,6 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       theme: ThemeData(
         // This is the theme of your application.
@@ -53,70 +54,183 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulse;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulse = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF3ec0ec), // light blue
+                  Color(0xFF7f29d2), // purple
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-          ],
-        ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 60),
+                // Title with a more attractive background
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF3ec0ec), // light blue
+                        Color(0xFF7f29d2), // purple
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.18),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.08),
+                        blurRadius: 2,
+                        offset: const Offset(-2, -2),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.25),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Text(
+                    'ReflectifAI',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                      shadows: [
+                        Shadow(
+                          blurRadius: 10.0,
+                          color: Colors.black54,
+                          offset: Offset(2.0, 2.0),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment(
+                      0,
+                      -0.4,
+                    ), // move the stack a bit higher
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Animated pulsing ring - improved look and new color
+                        Transform.scale(
+                          scale: _pulse.value,
+                          child: Container(
+                            width: 210,
+                            height: 210,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  Color(
+                                    0xFFA4D2F4,
+                                  ).withOpacity(0.7 * (2 - _pulse.value)),
+                                  Color(
+                                    0xFFA4D2F4,
+                                  ).withOpacity(0.2 * (2 - _pulse.value)),
+                                  Colors.transparent,
+                                ],
+                                stops: [0.6, 0.85, 1.0],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(
+                                    0xFFA4D2F4,
+                                  ).withOpacity(0.5 * (2 - _pulse.value)),
+                                  blurRadius: 60,
+                                  spreadRadius: 20,
+                                ),
+                                BoxShadow(
+                                  color: Color(
+                                    0xFF3ec0ec,
+                                  ).withOpacity(0.15 * (2 - _pulse.value)),
+                                  blurRadius: 100,
+                                  spreadRadius: 40,
+                                ),
+                              ],
+                              border: Border.all(
+                                color: Color(
+                                  0xFFA4D2F4,
+                                ).withOpacity(0.9 * (2 - _pulse.value)),
+                                width: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Logo
+                        Container(
+                          width: 150,
+                          height: 150,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.transparent,
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/logo.jpeg',
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

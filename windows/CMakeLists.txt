@@ -106,3 +106,12 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Add /FS flag to allow multiple compiler processes to write to the same .pdb file
+if (MSVC)
+  foreach(FLAG_VAR CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG)
+    if(NOT ${FLAG_VAR} MATCHES "/FS")
+      set(${FLAG_VAR} "${${FLAG_VAR}} /FS" CACHE STRING "" FORCE)
+    endif()
+  endforeach()
+endif()
