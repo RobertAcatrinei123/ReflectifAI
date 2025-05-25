@@ -12,7 +12,7 @@ class ElevenlabsService {
   static const String _speechToTextApiPath = '/speech-to-text';
 
   // Replace with your Eleven Labs API key
-  static const String _apiKey = Apikeys.elevenlabs;
+  static const String _apiKey = Apikeys.elevenlabs_new;
 
   // Default model for transcription
   static const String _modelId = 'scribe_v1';
@@ -23,6 +23,11 @@ class ElevenlabsService {
 
   /// Transcribe audio file using Eleven Labs Speech-to-Text API
   /// Returns the transcribed text or null if transcription fails
+  ElevenlabsService() {
+    console.log(
+      '-------------------------------------- $_apiKey --------------------------------------',
+    );
+  }
   Future<String?> transcribeAudio(String audioFilePath) async {
     try {
       console.log('Starting Eleven Labs transcription of $audioFilePath');

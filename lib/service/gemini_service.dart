@@ -26,6 +26,7 @@ class GeminiService {
                 },
               )
               .toList(),
+      "tools":[{"google_search": {}}],
     });
     try {
       console.log("Sending request to Gemini API: $body");

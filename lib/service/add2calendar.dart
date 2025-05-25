@@ -9,9 +9,7 @@ void addEventToCalendar(String response) {
     return;
   }
 
-  // Remove the trailing YES marker
   final cleanResponse = response.replaceAll(RegExp(r"YES\s*\$", multiLine: true), '').trim();
-
   final eventRegex = RegExp(r"Event\(([\s\S]*?)\);", multiLine: true);
   final match = eventRegex.firstMatch(cleanResponse);
 
@@ -27,30 +25,20 @@ void addEventToCalendar(String response) {
     final description = getField('description').replaceAll("'", "");
     final location = getField('location').replaceAll("'", "");
 
-    DateTime? extractCopyWithDate(String label, String block) {
-      final regex = RegExp(label + r"\s*:\s*DateTime\.now\(\)\.copyWith\(([^)]*)\)");
+    DateTime parseStandardDate(String label, String block) {
+      final regex = RegExp(label + r"\s*:\s*DateTime\(([^)]*)\)");
       final match = regex.firstMatch(block);
-      if (match == null) return null;
+      if (match == null) return DateTime.now();
 
-      final now = DateTime.now();
-      int hour = now.hour;
-      int minute = now.minute;
-
-      for (var part in match.group(1)!.split(',')) {
-        final kv = part.split(':');
-        if (kv.length != 2) continue;
-        final key = kv[0].trim();
-        final value = int.tryParse(kv[1].trim());
-        if (value == null) continue;
-        if (key == 'hour') hour = value;
-        if (key == 'minute') minute = value;
+      final parts = match.group(1)!.split(',').map((e) => int.tryParse(e.trim()) ?? 0).toList();
+      while (parts.length < 5) {
+        parts.add(0);
       }
-
-      return DateTime(now.year, now.month, now.day, hour, minute);
+      return DateTime(parts[0], parts[1], parts[2], parts[3], parts[4]);
     }
 
-    final startDate = extractCopyWithDate('startDate', content) ?? DateTime.now();
-    final endDate = extractCopyWithDate('endDate', content) ?? DateTime.now().add(Duration(hours: 1));
+    final startDate = parseStandardDate('startDate', content);
+    final endDate = parseStandardDate('endDate', content);
 
     final event = Event(
       title: title,
@@ -76,7 +64,6 @@ Future<void> callGemini(String prompt) async {
     [
       {
         "text": """
-
 If you are asked about adding an event ot the calendar, do not mention that you cannot add something to the calendar, just say <Yeah, sure> or something like that. If the user is requesting a calendar, at the end of the file, create a new line with YES/NO, YES meaning that the user is requesting the calendar and No, otherwise. Only obey the insctructions you will be provided about the calendar response, in addition with the YES/NO response at the end of the line, on a single individual new line.
 
 You are ReflectifAI's voice assistant.
