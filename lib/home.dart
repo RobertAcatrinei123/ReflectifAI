@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:reflectifai/screens/idle.dart';
 import 'package:reflectifai/screens/listen.dart';
 import 'package:reflectifai/screens/newspeaking.dart';
-import 'package:reflectifai/screens/speaking.dart';
 import 'package:reflectifai/screens/transition.dart';
 import 'package:reflectifai/service/audio_recording_service.dart';
 import 'package:reflectifai/service/gemini_service.dart';
@@ -308,6 +307,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    //return TransitionScreen();
     if (state == "IDLE") {
       return IdleScreen();
     } else if (state == "LISTENING") {

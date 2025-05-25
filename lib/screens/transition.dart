@@ -53,7 +53,6 @@ class _TransitionScreenState extends State<TransitionScreen>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 60),
-                // Title with a more attractive background
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
@@ -62,8 +61,8 @@ class _TransitionScreenState extends State<TransitionScreen>
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFF3ec0ec), // light blue
-                        Color(0xFF7f29d2), // purple
+                        Color(0xFF3ec0ec),
+                        Color(0xFF7f29d2),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -106,14 +105,11 @@ class _TransitionScreenState extends State<TransitionScreen>
                 const SizedBox(height: 40),
                 Expanded(
                   child: Align(
-                    alignment: Alignment(
-                      0,
-                      -0.4,
-                    ), // move the stack a bit higher
+                    alignment: const Alignment(0, -0.4),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Animated pulsing ring - improved look and new color
+                        // Transition Ring
                         Transform.scale(
                           scale: _pulse.value,
                           child: Container(
@@ -123,36 +119,26 @@ class _TransitionScreenState extends State<TransitionScreen>
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  Color(
-                                    0xFFA4D2F4,
-                                  ).withOpacity(0.7 * (2 - _pulse.value)),
-                                  Color(
-                                    0xFFA4D2F4,
-                                  ).withOpacity(0.2 * (2 - _pulse.value)),
+                                  const Color(0xFF00FFFF).withOpacity(0.7 * (2 - _pulse.value)), // cyan
+                                  const Color(0xFF7F29D2).withOpacity(0.2 * (2 - _pulse.value)), // violet
                                   Colors.transparent,
                                 ],
-                                stops: [0.6, 0.85, 1.0],
+                                stops: const [0.6, 0.85, 1.0],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Color(
-                                    0xFFA4D2F4,
-                                  ).withOpacity(0.5 * (2 - _pulse.value)),
+                                  color: const Color(0xFF00FFFF).withOpacity(0.5 * (2 - _pulse.value)),
                                   blurRadius: 60,
                                   spreadRadius: 20,
                                 ),
                                 BoxShadow(
-                                  color: Color(
-                                    0xFF3ec0ec,
-                                  ).withOpacity(0.15 * (2 - _pulse.value)),
+                                  color: const Color(0xFF7F29D2).withOpacity(0.2 * (2 - _pulse.value)),
                                   blurRadius: 100,
                                   spreadRadius: 40,
                                 ),
                               ],
                               border: Border.all(
-                                color: Color(
-                                  0xFFA4D2F4,
-                                ).withOpacity(0.9 * (2 - _pulse.value)),
+                                color: const Color(0xFF00FFFF).withOpacity(0.9 * (2 - _pulse.value)),
                                 width: 12,
                               ),
                             ),

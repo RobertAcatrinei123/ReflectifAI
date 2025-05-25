@@ -199,40 +199,54 @@ class _InfiniteSpeakingRingPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
-    final paint =
-        Paint()
-          ..shader = SweepGradient(
-            colors: [
-              const Color(0xFFA4D2F4).withOpacity(0.3),
-              const Color(0xFF3ec0ec).withOpacity(0.5),
-              const Color(0xFFA4D2F4).withOpacity(0.2),
-            ],
-            startAngle: 0,
-            endAngle: 2 * math.pi,
-          ).createShader(Rect.fromCircle(center: center, radius: baseRadius))
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 6;
+    final scale = 1.0 + (math.sin(time * 2) * 0.1); // subtle breathing effect
 
-    final path = Path();
+    final gradientPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFA4D2F4).withOpacity(0.7 * (2 - scale)),
+          const Color(0xFFA4D2F4).withOpacity(0.2 * (2 - scale)),
+          Colors.transparent,
+        ],
+        stops: const [0.6, 0.85, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: baseRadius));
+
+    final borderPaint = Paint()
+      ..color = const Color(0xFFA4D2F4).withOpacity(0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12;
+
+    final glowPaint = Paint()
+      ..color = const Color(0xFFA4D2F4).withOpacity(0.5)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30);
+
+    final wavePath = Path();
     for (int i = 0; i <= points; i++) {
       final angle = (2 * math.pi / points) * i;
-      final wave =
-          math.sin(angle * 3 + time * 6) * 10 +
+      final wave = math.sin(angle * 3 + time * 6) * 10 +
           math.sin(angle * 5 + time * 3) * 6;
       final r = baseRadius + wave;
       final x = center.dx + r * math.cos(angle);
       final y = center.dy + r * math.sin(angle);
       if (i == 0) {
-        path.moveTo(x, y);
+        wavePath.moveTo(x, y);
       } else {
-        path.lineTo(x, y);
+        wavePath.lineTo(x, y);
       }
     }
-    path.close();
-    canvas.drawPath(path, paint);
+    wavePath.close();
+
+    // Apply gradient fill
+    canvas.drawCircle(center, baseRadius, Paint()..shader = gradientPaint.shader);
+
+    // Optional glow
+    canvas.drawPath(wavePath, glowPaint);
+
+    // Draw dynamic waveform border
+    canvas.drawPath(wavePath, borderPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _InfiniteSpeakingRingPainter oldDelegate) =>
-      true;
+  bool shouldRepaint(covariant _InfiniteSpeakingRingPainter oldDelegate) => true;
 }
+

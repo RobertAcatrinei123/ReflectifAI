@@ -16,7 +16,7 @@ class _IdleScreenState extends State<IdleScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 60),
+      duration: const Duration(seconds: 6),
       vsync: this,
     )..repeat(reverse: true);
     _pulse = Tween<double>(
