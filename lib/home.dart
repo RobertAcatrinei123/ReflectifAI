@@ -7,9 +7,9 @@ import 'package:reflectifai/screens/newspeaking.dart';
 import 'package:reflectifai/screens/transition.dart';
 import 'package:reflectifai/service/audio_recording_service.dart';
 import 'package:reflectifai/service/gemini_service.dart';
-import 'package:reflectifai/service/phrase_detection_service.dart';
 import 'package:reflectifai/service/elevenlabs.dart';
 import 'package:reflectifai/service/audio_playback_service.dart';
+import 'package:reflectifai/service/speech_recognition_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,25 +19,33 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final PhraseDetectionService _phraseDetectionService =
-      PhraseDetectionService();
+  final SpeechRecognitionService _speechRecognitionService =
+      SpeechRecognitionService();
   final ElevenlabsService _elevenlabsService = ElevenlabsService();
   final AudioRecordingService _audioRecordingService = AudioRecordingService();
   final AudioPlaybackService _audioPlaybackService = AudioPlaybackService();
   final GeminiService _geminiService = GeminiService();
   List<Map<String, String>> chat = [];
   List<Map<String, String>> instructions = [];
+  List<String> phrases = [];
   String text = 'initializing...';
   String state = "IDLE";
 
   @override
   void initState() {
     super.initState();
-    _initializePhraseDetection();
-    _startDetection();
-    _audioRecordingService.init();
-    _initializeAudioPlayback();
-    getInstructions();
+    _initializeServices();
+  }
+
+  Future<void> _initializeServices() async {
+    await _initSpeechRecognition();
+    await _initializePhraseDetection(); // This populates phrases and sets the callback
+    await _startDetection(); // This should now be called after speech recognition is initialized
+
+    // Other initializations
+    await _audioRecordingService.init();
+    await _initializeAudioPlayback();
+    await getInstructions();
   }
 
   Future<void> getInstructions() async {
@@ -75,50 +83,39 @@ class _HomePageState extends State<HomePage> {
     };
   }
 
+  Future<void> _initSpeechRecognition() async {
+    console.log('🎤 Initializing SpeechRecognitionService...');
+    final initialized = await _speechRecognitionService.initialize();
+    if (initialized) {
+      console.log('✅ SpeechRecognitionService initialized successfully');
+    } else {
+      console.log('❌ Failed to initialize SpeechRecognitionService');
+      _showErrorDialog(
+        'Failed to initialize speech recognition. Please check permissions.',
+      );
+    }
+  }
+
   Future<void> _initializePhraseDetection() async {
     // Add some example phrases to watch for
-    _phraseDetectionService.addWatchedPhrase('hello');
-    _phraseDetectionService.addWatchedPhrase('hey');
-    _phraseDetectionService.addWatchedPhrase('hello reflectify');
-    _phraseDetectionService.addWatchedPhrase('hey reflectify');
-    _phraseDetectionService.addWatchedPhrase('hello reflectifai');
-    _phraseDetectionService.addWatchedPhrase('hey reflectifai');
-    //_phraseDetectionService.addWatchedPhrase('reflectif');
-    //_phraseDetectionService.addWatchedPhrase('stop listening');
-
-    // Set similarity threshold (0.8 means 80% similarity required)
-    _phraseDetectionService.setSimilarityThreshold(0.7);
-
-    // Add debugging callback for audio processing
-    _phraseDetectionService.addAudioProcessingCallback(
-      (audioPath, fileSize) {},
-    );
-
-    // Add debugging callback for transcription results
-    _phraseDetectionService.addTranscriptionCallback((transcript, isSuccess) {
-      if (isSuccess && transcript.isNotEmpty) {
-        print('📝 TRANSCRIPTION SUCCESS: "$transcript"');
-      } else if (!isSuccess) {
-        print('❌ TRANSCRIPTION FAILED');
-      } else {
-        print('🔇 TRANSCRIPTION EMPTY (no speech detected)');
-      }
-      print('---');
-    });
+    phrases.add('hi');
+    phrases.add('hello');
+    phrases.add('hey');
+    phrases.add('hello reflectify');
+    phrases.add('hey reflectify');
+    phrases.add('hi reflectify');
 
     // Add callback for when phrases are detected
-    _phraseDetectionService.addPhraseDetectedCallback((
-      detectedPhrase,
-      fullTranscript,
-    ) {
-      console.log(
-        '📣 PHRASE DETECTED: "$detectedPhrase" in full transcript: "$fullTranscript"',
-      );
+    _speechRecognitionService.setOnWakePhraseDetected(() {
       startListening();
     });
   }
 
   void startListening() async {
+    if(state == "LISTENING" || state == "TRANSITION") {
+      console.log('🔄 Already listening, ignoring wake phrase');
+      return;
+    }
     console.log(
       '🎯 Wake phrase detected - starting extended listening session',
     );
@@ -126,12 +123,13 @@ class _HomePageState extends State<HomePage> {
       state = "TRANSITION";
     });
 
-    await Future.delayed(Duration(seconds: 2));
+    Future.delayed(Duration(seconds: 2)).then((_) {
+      setState(() {
+        state = "LISTENING";
+      });
+    });
 
     // DON'T stop detection yet - just extend the current session
-    setState(() {
-      state = "LISTENING";
-    });
 
     // Start a longer recording session using the existing phrase detection service
     // We'll modify it to record for longer when triggered
@@ -143,9 +141,6 @@ class _HomePageState extends State<HomePage> {
 
     // Temporarily stop the continuous phrase detection
     await _stopDetection();
-
-    // Wait a moment for the audio system to be fully released
-    await Future.delayed(Duration(milliseconds: 500));
 
     try {
       // Use the existing audio recording service with a longer timeout
@@ -184,11 +179,6 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       console.log('❌ Error in extended listening: $e');
     }
-
-    // Reset the UI and restart phrase detection
-    setState(() {
-      text = 'listening for wake phrase...';
-    });
   }
 
   Future<void> _startDetection() async {
@@ -196,24 +186,11 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       state = "IDLE";
     });
-    final success = await _phraseDetectionService.startDetection();
-    if (success) {
-      setState(() {
-        text = 'listening for wake phrase...';
-      });
-      console.log('✅ Phrase detection started successfully');
-    } else {
-      setState(() {
-        text = 'error: check permissions';
-      });
-      _showErrorDialog(
-        'Failed to start phrase detection. Please check permissions.',
-      );
-    }
+    _speechRecognitionService.startListeningForWakePhrase(wakePhrases: phrases);
   }
 
   Future<void> _stopDetection() async {
-    await _phraseDetectionService.stopDetection();
+    await _speechRecognitionService.stopListeningForWakePhrase();
   }
 
   void _showErrorDialog(String message) {
@@ -235,7 +212,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    _phraseDetectionService.dispose();
+    _speechRecognitionService.dispose();
     super.dispose();
   }
 
