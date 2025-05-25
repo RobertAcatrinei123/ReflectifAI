@@ -10,6 +10,7 @@ import 'package:reflectifai/service/gemini_service.dart';
 import 'package:reflectifai/service/elevenlabs.dart';
 import 'package:reflectifai/service/audio_playback_service.dart';
 import 'package:reflectifai/service/speech_recognition_service.dart';
+import 'package:reflectifai/service/add2calendar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,8 +20,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final SpeechRecognitionService _speechRecognitionService =
-      SpeechRecognitionService();
+  final SpeechRecognitionService _speechRecognitionService = SpeechRecognitionService();
   final ElevenlabsService _elevenlabsService = ElevenlabsService();
   final AudioRecordingService _audioRecordingService = AudioRecordingService();
   final AudioPlaybackService _audioPlaybackService = AudioPlaybackService();
@@ -39,10 +39,8 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initializeServices() async {
     await _initSpeechRecognition();
-    await _initializePhraseDetection(); // This populates phrases and sets the callback
-    await _startDetection(); // This should now be called after speech recognition is initialized
-
-    // Other initializations
+    await _initializePhraseDetection();
+    await _startDetection();
     await _audioRecordingService.init();
     await _initializeAudioPlayback();
     await getInstructions();
@@ -64,11 +62,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeAudioPlayback() async {
-    // Initialize audio playback service
     _audioPlaybackService.initialize();
     console.log('🔊 Initializing AudioPlaybackService...');
 
-    // Set up callbacks
     _audioPlaybackService.onPlaybackComplete = () {
       console.log('🔊 Audio playback completed');
       _startDetection();
@@ -90,35 +86,23 @@ class _HomePageState extends State<HomePage> {
       console.log('✅ SpeechRecognitionService initialized successfully');
     } else {
       console.log('❌ Failed to initialize SpeechRecognitionService');
-      _showErrorDialog(
-        'Failed to initialize speech recognition. Please check permissions.',
-      );
+      _showErrorDialog('Failed to initialize speech recognition. Please check permissions.');
     }
   }
 
   Future<void> _initializePhraseDetection() async {
-    // Add some example phrases to watch for
-    phrases.add('hi');
-    phrases.add('hello');
-    phrases.add('hey');
-    phrases.add('hello reflectify');
-    phrases.add('hey reflectify');
-    phrases.add('hi reflectify');
-
-    // Add callback for when phrases are detected
+    phrases.addAll(['hi', 'hello', 'hey', 'hello reflectify', 'hey reflectify', 'hi reflectify']);
     _speechRecognitionService.setOnWakePhraseDetected(() {
       startListening();
     });
   }
 
   void startListening() async {
-    if(state == "LISTENING" || state == "TRANSITION") {
+    if (state == "LISTENING" || state == "TRANSITION") {
       console.log('🔄 Already listening, ignoring wake phrase');
       return;
     }
-    console.log(
-      '🎯 Wake phrase detected - starting extended listening session',
-    );
+    console.log('🎯 Wake phrase detected - starting extended listening session');
     setState(() {
       state = "TRANSITION";
     });
@@ -129,33 +113,22 @@ class _HomePageState extends State<HomePage> {
       });
     });
 
-    // DON'T stop detection yet - just extend the current session
-
-    // Start a longer recording session using the existing phrase detection service
-    // We'll modify it to record for longer when triggered
     await _startExtendedListening();
   }
 
   Future<void> _startExtendedListening() async {
     console.log('🎤 Starting extended listening session (10 seconds)...');
-
-    // Temporarily stop the continuous phrase detection
     await _stopDetection();
 
     try {
-      // Use the existing audio recording service with a longer timeout
       var bytes = await _audioRecordingService.startRecording(
         timeoutDuration: Duration(seconds: 5),
-        silenceDetectionDuration: Duration(
-          seconds: 2,
-        ), // Stop after 2 seconds of silence
+        silenceDetectionDuration: Duration(seconds: 2),
       );
 
       String? words;
       if (bytes != null) {
-        console.log(
-          '🎤 EXTENDED RECORDING COMPLETED, SIZE: ${bytes.length} bytes',
-        );
+        console.log('🎤 EXTENDED RECORDING COMPLETED, SIZE: ${bytes.length} bytes');
         words = await _elevenlabsService.transcribeAudioBytes(bytes);
       } else {
         console.log('❌ EXTENDED RECORDING FAILED OR TIMED OUT');
@@ -168,11 +141,7 @@ class _HomePageState extends State<HomePage> {
           text = 'received: "$words"';
         });
 
-        // Convert the received text to speech and play it back
         await _generateAndPlayResponse(words);
-
-        // Wait a moment to show the result
-        await Future.delayed(Duration(seconds: 2));
       } else {
         console.log('🔇 NO WORDS DETECTED IN EXTENDED TRANSCRIPTION');
       }
@@ -196,17 +165,16 @@ class _HomePageState extends State<HomePage> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Error'),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
           ),
+        ],
+      ),
     );
   }
 
@@ -216,7 +184,6 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  /// Generate a text-to-speech response and play it back
   Future<void> _generateAndPlayResponse(String userInput) async {
     try {
       console.log('🎤 Generating TTS response for: "$userInput"');
@@ -225,7 +192,8 @@ class _HomePageState extends State<HomePage> {
         text = 'generating response...';
       });
 
-      // Create a simple response based on user input
+      callGemini(userInput); // Call first so that calendar may get handled in parallel
+
       String responseText = await _createResponse(userInput);
       console.log('💬 Response text: "$responseText"');
 
@@ -233,10 +201,7 @@ class _HomePageState extends State<HomePage> {
         text = 'converting to speech...';
       });
 
-      // Convert response to speech
-      final audioBytes = await _elevenlabsService.textToSpeech(
-        text: responseText,
-      );
+      final audioBytes = await _elevenlabsService.textToSpeech(text: responseText);
 
       if (audioBytes != null) {
         console.log('✅ TTS conversion successful');
@@ -246,11 +211,7 @@ class _HomePageState extends State<HomePage> {
           state = "SPEAKING";
         });
 
-        // Play the audio response
-        final playbackSuccess = await _audioPlaybackService.playAudioBytes(
-          audioBytes,
-          fileExtension: 'mp3',
-        );
+        final playbackSuccess = await _audioPlaybackService.playAudioBytes(audioBytes, fileExtension: 'mp3');
 
         if (playbackSuccess) {
           console.log('🔊 Audio response playback started');
@@ -274,17 +235,18 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  /// Create a simple response based on user input
   Future<String> _createResponse(String userInput) async {
     chat.add({"role": "user", "content": userInput});
     var res = await _geminiService.getResponse(chat, instructions);
     chat.add({"role": "model", "content": res});
+
+    addEventToCalendar(res); // Decision moved inside addEventToCalendar based on Gemini's YES/NO
+
     return res;
   }
 
   @override
   Widget build(BuildContext context) {
-    //return TransitionScreen();
     if (state == "IDLE") {
       return IdleScreen();
     } else if (state == "LISTENING") {
